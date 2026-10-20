@@ -102,6 +102,8 @@ if (projectModal) {
     projectModal.querySelector('.project-modal-close')?.focus();
   }
 
+  window.moireOpenProject = openProject;
+
   function closeProject() {
     projectModal.classList.remove('is-open');
     projectModal.setAttribute('aria-hidden', 'true');
