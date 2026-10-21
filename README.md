@@ -1,30 +1,23 @@
 # MOIRÉ STUDIO — Website + Admin Panel
 
-This project is intentionally separated so the website files and admin-only files are not mixed together.
-
-## Folder structure
-
-- `index.html`, `about.html`, `projects.html`, `services.html`, `contact.html`, `faq.html`, `project.html` — public website pages
-- `styles.css`, `script.js`, `cms.js`, `supabase-config.js` — public website styling/runtime/CMS connection
-- `assets/` — website and project images
-- `admin-panel/` — private dashboard files only (`admin.html`, `admin.css`, `admin.js`, `supabase-config.js`, `supabase-setup.sql`)
+## Website files
+- Public pages: `index.html`, `about.html`, `services.html`, `projects.html`, `project.html`, `contact.html`, `faq.html`
+- Public CMS: `cms.js` + `supabase-config.js`
+- Private admin: `admin-panel/`
+- Assets: `assets/`
 
 ## Deploy
+1. Extract the ZIP and deploy the **contents of `MOIRE WEB FORMAL`** to the hosting root. Keep `assets/`, `admin-panel/`, and all HTML/JS/CSS files together.
+2. In Supabase Authentication → Users, create the admin email/password first.
+3. Open `admin-panel/supabase-setup.sql`, replace `REPLACE_WITH_ADMIN_EMAIL` with the admin account email, then run the full script in Supabase SQL Editor.
+4. Both `supabase-config.js` and `admin-panel/supabase-config.js` already contain the public project URL and anon key. Never put a service-role key in browser code.
+5. Open `https://YOUR-DOMAIN/admin-panel/admin.html` and sign in.
 
-1. Upload the **contents of this folder** to the website's hosting root so `index.html` opens at the domain root. Keep `admin-panel/` and `assets/` in place.
-2. Open `admin-panel/supabase-setup.sql` and run it in the Supabase SQL Editor.
-3. Create the admin login in Supabase Authentication (email/password).
-4. Add the Supabase Project URL and anon/public key in **both** `supabase-config.js` (website CMS) and `admin-panel/supabase-config.js` (dashboard). Never put the service-role key in either file.
-5. Open `/admin-panel/admin.html` to sign in.
+## Editing
+- Page editor: text and images for elements marked as editable on all seven existing pages.
+- Project library: add/edit/delete projects, upload multiple photos, remove or reorder photos using the arrow controls, and publish/unpublish. First photo is the cover.
+- Social links: edit Facebook, Instagram and LinkedIn URLs.
+- Uploaded images are stored in Supabase Storage, not only in the browser.
 
-## What the admin controls
-
-- Website text for supported `[data-cms-key]` blocks
-- Project records, 2D/3D category, gallery images, publish state
-- Social links in site settings
-
-## Notes
-
-- The admin panel loads page markup from the website root using relative paths. Keep the folder structure intact after deployment.
-- Supabase Storage bucket/policies and Row Level Security are configured by the SQL setup script.
-- Use HTTPS in production. The Supabase anon key is public by design; access protection must come from correct RLS policies and Auth.
+## Important
+The admin uses Supabase Auth + Row Level Security. The SQL script must be run and the correct admin email must be entered before admin actions will work. Public project changes appear on the Projects page after it reloads.
