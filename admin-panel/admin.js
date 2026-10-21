@@ -95,27 +95,32 @@ async function saveFields(sectionTitleFilter=null){
   const editors=[...$('sectionGroups').querySelectorAll('.visual-editor')].filter(el=>!sectionTitleFilter||el.dataset.sectionTitle===sectionTitleFilter);
   const rows=editors.map(el=>{
     let content=el.innerHTML;
-    // Keep the homepage hero's designed white prefix and red editable phrase, even if the client selects/replaces all text.
+    // Preserve fixed white prefix and red editable phrase on the Home hero.
     if(el.dataset.contentKey==='index.001'){
       const plain=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
-      const prefix=/^Designed\s*to\s*/i;
-      const phrase=plain.replace(prefix,'').trim() || 'linger.';
-      content=`Designed<br>to <span class=\"red\">${escapeHtml(phrase)}</span>`;
+      const match=plain.match(/^Designed\s+to\s+([\s\S]*)$/i);
+      const phrase=(match?match[1]:plain.replace(/^Designed\s*to\s*/i,'')).trim() || ' ';
+      const safe=document.createElement('span'); safe.textContent=phrase;
+      content='Designed<br>to <span class="red">'+safe.innerHTML+'</span>';
     } else {
-      // Preserve existing accent spans if the client replaces the text inside the colored phrase.
+      // Keep each original accent span and replace its text with the corresponding edited text.
       const original=el.dataset.originalHtml||'';
-      if(/class=[\"']red[\"']/.test(original)){
+      if(/class=["']red["']/.test(original)){
         const originalDoc=new DOMParser().parseFromString(original,'text/html');
-        const currentText=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
         const red=originalDoc.querySelector('.red');
+        const currentText=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
         if(red && currentText){
-          const prefixText=(originalDoc.body.textContent||'').split(red.textContent)[0].replace(/\s+/g,' ').trim();
-          const suffixText=(originalDoc.body.textContent||'').split(red.textContent).slice(1).join(red.textContent).replace(/\s+/g,' ').trim();
-          let phrase=currentText;
-          if(prefixText && phrase.toLowerCase().startsWith(prefixText.toLowerCase())) phrase=phrase.slice(prefixText.length).trim();
-          if(suffixText && phrase.toLowerCase().endsWith(suffixText.toLowerCase())) phrase=phrase.slice(0,-suffixText.length).trim();
-          red.textContent=phrase || red.textContent;
-          content=originalDoc.body.innerHTML;
+          const full=(originalDoc.body.textContent||'').replace(/\s+/g,' ').trim();
+          const oldAccent=(red.textContent||'').replace(/\s+/g,' ').trim();
+          const at=full.indexOf(oldAccent);
+          if(at>=0){
+            const before=full.slice(0,at), after=full.slice(at+oldAccent.length);
+            let newAccent=currentText;
+            if(before && newAccent.toLowerCase().startsWith(before.toLowerCase()))newAccent=newAccent.slice(before.length);
+            if(after && newAccent.toLowerCase().endsWith(after.toLowerCase()))newAccent=newAccent.slice(0,-after.length);
+            red.textContent=newAccent.trim() || ' ';
+            content=originalDoc.body.innerHTML;
+          }
         }
       }
     }

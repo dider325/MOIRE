@@ -7,7 +7,7 @@
   async function loadText(){
     const {data,error}=await client.from('site_content').select('content_key,content_html').like('content_key',page+'.%');
     if(error||!data)return;
-    data.forEach(row=>{const el=document.querySelector('[data-cms-key="'+CSS.escape(row.content_key)+'"]');if(!el)return;let html=row.content_html;if(page==='index'&&row.content_key==='index.001'){const plain=document.createElement('div');plain.innerHTML=html;const txt=(plain.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();if(txt.includes('designed')&&txt.includes('linger'))html='Designed<br>to <span class="red">linger.</span>';}el.innerHTML=html;});
+    data.forEach(row=>{const el=document.querySelector('[data-cms-key="'+CSS.escape(row.content_key)+'"]');if(!el)return;let html=row.content_html;if(page==='index'&&row.content_key==='index.001'){const plain=document.createElement('div');plain.innerHTML=html;const txt=(plain.textContent||'').replace(/\s+/g,' ').trim();const match=txt.match(/^Designed\s+to\s+([\s\S]*)$/i);if(match){const phrase=match[1].trim()||' ';html='Designed<br>to <span class="red"></span>';const holder=document.createElement('div');holder.innerHTML=html;holder.querySelector('.red').textContent=phrase;html=holder.innerHTML;}}el.innerHTML=html;});
   }
   function makeCard(p,home=false){
     const images=Array.isArray(p.images)?p.images:[]; if(!images.length)return null;
