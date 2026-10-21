@@ -111,7 +111,9 @@ if (projectModal) {
     if (lastProjectTrigger) lastProjectTrigger.focus();
   }
 
-  document.querySelectorAll('.portfolio-card[data-title]').forEach(card => card.addEventListener('click', () => openProject(card)));
+  const bindProjectCards = () => document.querySelectorAll('.portfolio-card[data-title]:not([data-modal-bound])').forEach(card => { card.dataset.modalBound = 'true'; card.addEventListener('click', () => openProject(card)); });
+  bindProjectCards();
+  document.addEventListener('moire:projects-loaded', bindProjectCards);
   projectModal.querySelectorAll('[data-close-modal]').forEach(el => el.addEventListener('click', closeProject));
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && projectModal.classList.contains('is-open')) closeProject();
