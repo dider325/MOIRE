@@ -84,17 +84,43 @@ async function loadPageText(page){
     $('sectionCount').textContent=`${groupArray.length} sections · ${loadedFields.length} editable content items`;
     $('sectionGroups').innerHTML=groupArray.map((group,i)=>`<details class="section-card" ${i===0?'open':''}><summary class="section-summary"><span class="section-number">${String(i+1).padStart(2,'0')}</span><span class="section-summary-copy"><strong>${escapeHtml(group.title)}</strong><small>${group.fields.length} editable ${group.fields.length===1?'item':'items'}</small></span><span class="chevron">›</span></summary><div class="section-body"><p class="section-help">Edit only the text for this part of the ${escapeHtml(pageMeta[page].title)} page. The website’s layout and styling stay the same.</p><div class="field-grid">${group.fields.map(field=>renderField(field)).join('')}</div><div class="form-footer"><span class="message" data-section-message="${escapeHtml(group.title)}"></span><button class="primary" type="button" data-save-section="${escapeHtml(group.title)}">Save this section <span>↗</span></button></div></div></details>`).join('')||'<div class="loading-card">No editable text fields were found on this page.</div>';
     $('sectionGroups').querySelectorAll('[data-save-section]').forEach(button=>button.addEventListener('click',()=>saveFields(button.dataset.saveSection)));
-    $('sectionGroups').querySelectorAll('.format-tools button').forEach(button=>button.addEventListener('click',()=>{const target=$(button.dataset.target);if(!target)return;target.focus();if(button.dataset.command==='insertLineBreak')document.execCommand('insertLineBreak');else document.execCommand(button.dataset.command,false,null)}));
   }catch(error){$('sectionGroups').innerHTML=`<div class="loading-card">${escapeHtml(error.message||'Unable to load this page.')}</div>`;msg('pageMessage',error.message||'Unable to load page content.',true)}
 }
 function renderField(field){
   const full=['h1','h2','h3'].includes(field.tag)||field.label==='Paragraph / description'||field.label==='Introductory text'||field.label==='Display headline'||field.label==='Content text';
-  return `<div class="content-field ${full?'full':''}"><label for="editor-${field.index}"><span>${escapeHtml(field.label)}</span><span class="field-kind">${escapeHtml(field.tag.toUpperCase())}</span></label><div class="format-tools"><button type="button" data-command="insertLineBreak" data-target="editor-${field.index}" title="New line">↵ Line break</button></div><div id="editor-${field.index}" class="visual-editor" contenteditable="true" data-content-key="${escapeHtml(field.key)}" data-section-title="${escapeHtml(field.section)}" role="textbox" aria-label="${escapeHtml(field.label)}">${field.html}</div><div class="field-tip">Currently on website: ${escapeHtml(field.originalLabel||'Text block').slice(0,100)}</div></div>`;
+  return `<div class="content-field ${full?'full':''}"><label for="editor-${field.index}"><span>${escapeHtml(field.label)}</span><span class="field-kind">${escapeHtml(field.tag.toUpperCase())}</span></label><div id="editor-${field.index}" class="visual-editor" contenteditable="true" data-content-key="${escapeHtml(field.key)}" data-section-title="${escapeHtml(field.section)}" data-original-html="${escapeHtml(field.html)}" role="textbox" aria-label="${escapeHtml(field.label)}">${field.html}</div><div class="field-tip">Currently on website: ${escapeHtml(field.originalLabel||'Text block').slice(0,100)}</div></div>`;
 }
 async function saveFields(sectionTitleFilter=null){
   if(!db)return msg('pageMessage','Database is not connected.',true);
   const editors=[...$('sectionGroups').querySelectorAll('.visual-editor')].filter(el=>!sectionTitleFilter||el.dataset.sectionTitle===sectionTitleFilter);
-  const rows=editors.map(el=>({content_key:el.dataset.contentKey,content_html:el.innerHTML,updated_at:new Date().toISOString()}));
+  const rows=editors.map(el=>{
+    let content=el.innerHTML;
+    // Keep the homepage hero's designed white prefix and red editable phrase, even if the client selects/replaces all text.
+    if(el.dataset.contentKey==='index.001'){
+      const plain=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+      const prefix=/^Designed\s*to\s*/i;
+      const phrase=plain.replace(prefix,'').trim() || 'linger.';
+      content=`Designed<br>to <span class=\"red\">${escapeHtml(phrase)}</span>`;
+    } else {
+      // Preserve existing accent spans if the client replaces the text inside the colored phrase.
+      const original=el.dataset.originalHtml||'';
+      if(/class=[\"']red[\"']/.test(original)){
+        const originalDoc=new DOMParser().parseFromString(original,'text/html');
+        const currentText=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+        const red=originalDoc.querySelector('.red');
+        if(red && currentText){
+          const prefixText=(originalDoc.body.textContent||'').split(red.textContent)[0].replace(/\s+/g,' ').trim();
+          const suffixText=(originalDoc.body.textContent||'').split(red.textContent).slice(1).join(red.textContent).replace(/\s+/g,' ').trim();
+          let phrase=currentText;
+          if(prefixText && phrase.toLowerCase().startsWith(prefixText.toLowerCase())) phrase=phrase.slice(prefixText.length).trim();
+          if(suffixText && phrase.toLowerCase().endsWith(suffixText.toLowerCase())) phrase=phrase.slice(0,-suffixText.length).trim();
+          red.textContent=phrase || red.textContent;
+          content=originalDoc.body.innerHTML;
+        }
+      }
+    }
+    return {content_key:el.dataset.contentKey,content_html:content,updated_at:new Date().toISOString()};
+  });
   if(!rows.length)return;
   const targetMessage=sectionTitleFilter?[...document.querySelectorAll('[data-section-message]')].find(el=>el.dataset.sectionMessage===sectionTitleFilter):$('pageMessage');
   if(targetMessage){targetMessage.textContent='Saving…';targetMessage.classList.remove('error')}
