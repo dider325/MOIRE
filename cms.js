@@ -7,19 +7,19 @@
   async function loadText(){
     const {data,error}=await client.from('site_content').select('content_key,content_html').like('content_key',page+'.%');
     if(error||!data)return;
-    data.forEach(row=>{const el=document.querySelector('[data-cms-key="'+CSS.escape(row.content_key)+'"]');if(el)el.innerHTML=row.content_html;});
+    data.forEach(row=>{const el=document.querySelector('[data-cms-key="'+CSS.escape(row.content_key)+'"]');if(!el)return;let html=row.content_html;if(page==='index'&&row.content_key==='index.001'){const plain=document.createElement('div');plain.innerHTML=html;const txt=(plain.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();if(txt.includes('designed')&&txt.includes('linger'))html='Designed<br>to <span class="red">linger.</span>';}el.innerHTML=html;});
   }
   function makeCard(p,home=false){
     const images=Array.isArray(p.images)?p.images:[]; if(!images.length)return null;
     if(home){
-      const a=document.createElement('a');a.className='project reveal';a.href='projects.html';
+      const a=document.createElement('a');a.className='project reveal visible';a.href='projects.html';
       const img=document.createElement('img');img.src=images[0];img.alt=(p.title||'Moiré project');img.loading='lazy';a.appendChild(img);
       const info=document.createElement('div');info.className='project-info';
       const title=document.createElement('div');title.className='project-title';title.textContent=p.title||'Untitled project';
       const meta=document.createElement('div');meta.className='project-meta';meta.textContent=[p.space,p.year].filter(Boolean).join(' / ');
       info.append(title,meta);a.appendChild(info);return a;
     }
-    const card=document.createElement('button');card.type='button';card.className='portfolio-card reveal';
+    const card=document.createElement('button');card.type='button';card.className='portfolio-card reveal visible';
     card.dataset.title=p.title||'Project';card.dataset.type=p.category==='2d'?'2D Work':'Selected project';card.dataset.space=p.space||'Interior';card.dataset.year=p.year||'Selected project';card.dataset.description=p.description||'';card.dataset.images=images.join('|');
     const wrap=document.createElement('span');wrap.className='portfolio-image'+(p.category==='2d'?' plan-image':'');
     const img=document.createElement('img');img.src=images[0];img.alt=(p.title||'Moiré project')+' — project image';img.loading='lazy';wrap.appendChild(img);

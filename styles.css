@@ -595,3 +595,6 @@ body.modal-open{overflow:hidden}
   .site-nav .logo{width:auto;height:auto;font-size:18px;font-weight:500;letter-spacing:.18em;line-height:1;align-self:center}
   .footer-brand img{width:96px;height:96px}
 }
+
+/* CMS-injected portfolio cards are immediately visible; dynamic nodes are not part of the initial reveal observer. */
+#homeSelectedProjects .project.reveal, .portfolio-grid .portfolio-card.reveal { opacity:1; transform:none; }
